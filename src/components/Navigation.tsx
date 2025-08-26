@@ -1,16 +1,21 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Leaf, User, LogIn } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { Menu, Leaf, User, LogIn, LogOut } from "lucide-react";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
 
   const navItems = [
     { name: "Home", href: "/" },
-    { name: "Dashboard", href: "/dashboard" },
+    { name: "Dashboard", href: "/dashboard", protected: true },
     { name: "Analysis", href: "/analysis" },
     { name: "Weather", href: "/weather" },
     { name: "Resources", href: "/resources" },
@@ -19,6 +24,31 @@ const Navigation = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully.",
+      });
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAuthClick = () => {
+    navigate("/auth");
+  };
+
+  const filteredNavItems = navItems.filter(item => 
+    !item.protected || (item.protected && user)
+  );
 
   return (
     <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b border-border/40">
@@ -34,7 +64,7 @@ const Navigation = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6">
-          {navItems.map((item) => (
+          {filteredNavItems.map((item) => (
             <Link
               key={item.name}
               to={item.href}
@@ -50,14 +80,28 @@ const Navigation = () => {
         </div>
 
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="outline" size="sm">
-            <LogIn className="h-4 w-4 mr-2" />
-            Sign In
-          </Button>
-          <Button size="sm" className="bg-gradient-primary">
-            <User className="h-4 w-4 mr-2" />
-            Sign Up
-          </Button>
+          {user ? (
+            <>
+              <Link to="/admin" className="text-sm text-muted-foreground hover:text-primary">
+                Admin
+              </Link>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={handleAuthClick}>
+                <LogIn className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+              <Button size="sm" className="bg-gradient-primary" onClick={handleAuthClick}>
+                <User className="h-4 w-4 mr-2" />
+                Sign Up
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile Navigation */}
@@ -69,7 +113,7 @@ const Navigation = () => {
           </SheetTrigger>
           <SheetContent>
             <div className="flex flex-col space-y-4 mt-4">
-              {navItems.map((item) => (
+              {filteredNavItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
@@ -82,14 +126,23 @@ const Navigation = () => {
                 </Link>
               ))}
               <div className="flex flex-col space-y-2 pt-4">
-                <Button variant="outline" size="sm">
-                  <LogIn className="h-4 w-4 mr-2" />
-                  Sign In
-                </Button>
-                <Button size="sm" className="bg-gradient-primary">
-                  <User className="h-4 w-4 mr-2" />
-                  Sign Up
-                </Button>
+                {user ? (
+                  <Button variant="outline" size="sm" onClick={handleSignOut}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleAuthClick}>
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Sign In
+                    </Button>
+                    <Button size="sm" className="bg-gradient-primary" onClick={handleAuthClick}>
+                      <User className="h-4 w-4 mr-2" />
+                      Sign Up
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </SheetContent>
