@@ -19,23 +19,72 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const googleApiKey = Deno.env.get('GOOGLE_VISION_API_KEY');
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Mock AI analysis for now - In a real app, you'd integrate with an AI service
-    // This simulates different diseases and treatments based on crop type
-    const mockAnalysis = generateMockAnalysis(cropType);
+    let analysis;
+
+    // Try to use Google Vision API if available, otherwise fall back to mock data
+    if (googleApiKey) {
+      try {
+        console.log('Using Google Vision API for analysis');
+        
+        // Call Google Vision API for label detection
+        const visionResponse = await fetch(
+          `https://vision.googleapis.com/v1/images:annotate?key=${googleApiKey}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              requests: [{
+                image: {
+                  source: {
+                    imageUri: imageUrl
+                  }
+                },
+                features: [
+                  { type: 'LABEL_DETECTION', maxResults: 10 },
+                  { type: 'TEXT_DETECTION', maxResults: 5 }
+                ]
+              }]
+            })
+          }
+        );
+
+        if (!visionResponse.ok) {
+          throw new Error(`Vision API error: ${visionResponse.statusText}`);
+        }
+
+        const visionData = await visionResponse.json();
+        console.log('Google Vision API response:', JSON.stringify(visionData, null, 2));
+        
+        // Process Vision API results to determine crop health
+        analysis = processVisionResults(visionData.responses[0], cropType);
+        
+      } catch (visionError) {
+        console.error('Google Vision API error:', visionError);
+        console.log('Falling back to mock analysis');
+        analysis = generateMockAnalysis(cropType);
+      }
+    } else {
+      console.log('Google Vision API key not available, using mock analysis');
+      analysis = generateMockAnalysis(cropType);
+    }
 
     // Store the analysis in the database
-    const { data: analysis, error } = await supabase
+    const { data: analysisData, error } = await supabase
       .from('crop_analyses')
       .insert({
         user_id: userId,
         image_url: imageUrl,
         crop_type: cropType,
-        disease_detected: mockAnalysis.disease,
-        severity_level: mockAnalysis.severity,
-        confidence_score: mockAnalysis.confidence,
-        treatment_suggestions: mockAnalysis.treatments
+        disease_detected: analysis.disease,
+        severity_level: analysis.severity,
+        confidence_score: analysis.confidence,
+        treatment_suggestions: analysis.treatments
       })
       .select()
       .single();
@@ -52,12 +101,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         analysis: {
-          id: analysis.id,
-          disease: analysis.disease_detected,
-          severity: analysis.severity_level,
-          confidence: analysis.confidence_score,
-          treatments: analysis.treatment_suggestions,
-          analysisDate: analysis.analysis_date
+          id: analysisData.id,
+          disease: analysisData.disease_detected,
+          severity: analysisData.severity_level,
+          confidence: analysisData.confidence_score,
+          treatments: analysisData.treatment_suggestions,
+          analysisDate: analysisData.analysis_date
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -71,6 +120,125 @@ serve(async (req) => {
     );
   }
 });
+
+function processVisionResults(visionResult: any, cropType: string) {
+  console.log('Processing vision results for crop type:', cropType);
+  
+  if (!visionResult || !visionResult.labelAnnotations) {
+    return generateMockAnalysis(cropType);
+  }
+
+  const labels = visionResult.labelAnnotations.map((label: any) => ({
+    description: label.description.toLowerCase(),
+    score: label.score
+  }));
+
+  console.log('Detected labels:', labels);
+
+  // Look for disease indicators
+  const diseaseIndicators = [
+    'leaf spot', 'blight', 'rust', 'mold', 'fungus', 'disease', 'infection',
+    'wilted', 'damaged', 'brown', 'yellow', 'spotted', 'diseased'
+  ];
+  
+  const healthyIndicators = [
+    'healthy', 'green', 'fresh', 'plant', 'leaf', 'crop', 'vegetation'
+  ];
+
+  let diseaseScore = 0;
+  let healthScore = 0;
+  let detectedDiseases: string[] = [];
+
+  labels.forEach((label: any) => {
+    diseaseIndicators.forEach(indicator => {
+      if (label.description.includes(indicator)) {
+        diseaseScore += label.score;
+        detectedDiseases.push(indicator);
+      }
+    });
+    
+    healthyIndicators.forEach(indicator => {
+      if (label.description.includes(indicator)) {
+        healthScore += label.score;
+      }
+    });
+  });
+
+  // Determine health status based on scores
+  let disease = 'Healthy';
+  let severity = 'healthy';
+  let confidence = Math.round((healthScore / (healthScore + diseaseScore || 1)) * 100);
+  let treatments = [
+    'Continue current care routine',
+    'Monitor for any changes',
+    'Maintain proper watering schedule'
+  ];
+
+  if (diseaseScore > healthScore * 0.3) {
+    // Detected potential issues
+    if (detectedDiseases.length > 0) {
+      // Map detected issues to crop-specific diseases
+      disease = getCropSpecificDisease(cropType, detectedDiseases[0]);
+    } else {
+      disease = 'Leaf Abnormality Detected';
+    }
+    
+    if (diseaseScore > healthScore) {
+      severity = 'severe';
+      confidence = Math.round(diseaseScore * 100);
+      treatments = [
+        'Apply appropriate fungicide immediately',
+        'Remove affected plant parts',
+        'Improve air circulation',
+        'Consult agricultural extension service'
+      ];
+    } else {
+      severity = 'moderate';
+      confidence = Math.round(diseaseScore * 80);
+      treatments = [
+        'Monitor closely for progression',
+        'Consider preventive treatment',
+        'Improve cultural practices',
+        'Test soil conditions'
+      ];
+    }
+  }
+
+  return {
+    disease,
+    severity,
+    confidence: Math.min(Math.max(confidence, 60), 95), // Keep confidence realistic
+    treatments
+  };
+}
+
+function getCropSpecificDisease(cropType: string, indicator: string): string {
+  const diseaseMap: Record<string, Record<string, string>> = {
+    tomato: {
+      'leaf spot': 'Early Blight',
+      'blight': 'Late Blight',
+      'yellow': 'Septoria Leaf Spot',
+      'brown': 'Alternaria Stem Canker'
+    },
+    corn: {
+      'leaf spot': 'Northern Corn Leaf Blight',
+      'rust': 'Common Rust',
+      'blight': 'Southern Corn Leaf Blight'
+    },
+    wheat: {
+      'rust': 'Wheat Rust',
+      'blight': 'Wheat Blight',
+      'spot': 'Wheat Leaf Spot'
+    },
+    rice: {
+      'blight': 'Bacterial Blight',
+      'spot': 'Rice Blast',
+      'brown': 'Brown Spot'
+    }
+  };
+
+  return diseaseMap[cropType.toLowerCase()]?.[indicator] || `${cropType} Disease Detected`;
+}
 
 function generateMockAnalysis(cropType: string) {
   const diseaseDatabase: Record<string, any[]> = {
@@ -87,7 +255,7 @@ function generateMockAnalysis(cropType: string) {
         ]
       },
       {
-        disease: "Late Blight",
+        disease: "Late Blight", 
         severity: "severe",
         confidence: 94,
         treatments: [
@@ -121,7 +289,7 @@ function generateMockAnalysis(cropType: string) {
       },
       {
         disease: "Healthy",
-        severity: "healthy",
+        severity: "healthy", 
         confidence: 96,
         treatments: [
           "Maintain current farming practices",

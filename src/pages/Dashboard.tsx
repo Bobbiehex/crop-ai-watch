@@ -210,14 +210,55 @@ const Dashboard = () => {
     doc.text(`Severity Level: ${analysis.severity}`, 20, 80);
     doc.text(`Confidence Score: ${analysis.confidence}%`, 20, 90);
     
-    // Treatments
-    doc.text('Recommended Treatments:', 20, 110);
-    analysis.treatments.forEach((treatment, index) => {
-      doc.text(`${index + 1}. ${treatment}`, 25, 120 + (index * 10));
-    });
-    
-    // Save the PDF
-    doc.save(`crop-analysis-${analysis.id}.pdf`);
+    // Add image if available
+    if (analysis.imageUrl) {
+      try {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = function() {
+          // Calculate image dimensions to fit in PDF
+          const imgWidth = 80;
+          const imgHeight = (img.height * imgWidth) / img.width;
+          
+          // Add image to PDF
+          doc.addImage(img, 'JPEG', 20, 110, imgWidth, imgHeight);
+          
+          // Treatments section below image
+          const treatmentY = 110 + imgHeight + 20;
+          doc.text('Recommended Treatments:', 20, treatmentY);
+          analysis.treatments.forEach((treatment, index) => {
+            doc.text(`${index + 1}. ${treatment}`, 25, treatmentY + 10 + (index * 10));
+          });
+          
+          // Save the PDF after image is loaded
+          doc.save(`crop-analysis-${analysis.id}.pdf`);
+        };
+        img.onerror = function() {
+          // If image fails to load, create PDF without image
+          doc.text('Recommended Treatments:', 20, 110);
+          analysis.treatments.forEach((treatment, index) => {
+            doc.text(`${index + 1}. ${treatment}`, 25, 120 + (index * 10));
+          });
+          doc.save(`crop-analysis-${analysis.id}.pdf`);
+        };
+        img.src = analysis.imageUrl;
+      } catch (error) {
+        console.error('Error loading image for PDF:', error);
+        // Fallback: create PDF without image
+        doc.text('Recommended Treatments:', 20, 110);
+        analysis.treatments.forEach((treatment, index) => {
+          doc.text(`${index + 1}. ${treatment}`, 25, 120 + (index * 10));
+        });
+        doc.save(`crop-analysis-${analysis.id}.pdf`);
+      }
+    } else {
+      // No image available
+      doc.text('Recommended Treatments:', 20, 110);
+      analysis.treatments.forEach((treatment, index) => {
+        doc.text(`${index + 1}. ${treatment}`, 25, 120 + (index * 10));
+      });
+      doc.save(`crop-analysis-${analysis.id}.pdf`);
+    }
     
     toast({
       title: "Report Downloaded",

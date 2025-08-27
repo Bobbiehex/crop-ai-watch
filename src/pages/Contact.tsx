@@ -182,11 +182,16 @@ const Contact = () => {
             </CardContent>
           </Card>
 
-          {/* Map Placeholder */}
+          {/* Office Location */}
           <Card className="shadow-soft">
-            <CardContent className="p-0">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Our Location</h3>
               <div className="bg-gradient-subtle h-64 rounded-lg flex items-center justify-center">
-                <p className="text-muted-foreground">Interactive Map Coming Soon</p>
+                <div className="text-center">
+                  <MapPin className="h-12 w-12 mx-auto mb-2 text-primary" />
+                  <p className="text-muted-foreground">123 Agriculture Tech Center</p>
+                  <p className="text-muted-foreground">Silicon Valley, CA 94025</p>
+                </div>
               </div>
             </CardContent>
           </Card>

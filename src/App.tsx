@@ -14,6 +14,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
+import Drone from "./pages/Drone";
 import NotFound from "./pages/NotFound";
 import Layout from "./components/Layout";
 
@@ -31,9 +32,10 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/about" element={<Layout><About /></Layout>} />
             <Route path="/contact" element={<Layout><Contact /></Layout>} />
-            <Route path="/analysis" element={<Layout><Analysis /></Layout>} />
-            <Route path="/weather" element={<Layout><Weather /></Layout>} />
-            <Route path="/resources" element={<Layout><Resources /></Layout>} />
+            <Route path="/analysis" element={<Analysis />} />
+            <Route path="/weather" element={<Weather />} />
+            <Route path="/resources" element={<Resources />} />
+            <Route path="/drone" element={<Layout><Drone /></Layout>} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Layout><Dashboard /></Layout>

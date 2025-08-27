@@ -81,23 +81,32 @@ const Admin = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch profiles separately
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          user_roles (role)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (profilesError) throw profilesError;
 
-      const usersWithRoles = data?.map(profile => ({
-        id: profile.user_id,
-        email: profile.email || '',
-        full_name: profile.full_name || '',
-        created_at: profile.created_at,
-        role: (profile.user_roles as any)?.[0]?.role || 'user'
-      })) || [];
+      // Fetch roles separately  
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('*');
+
+      if (rolesError) throw rolesError;
+
+      // Combine the data
+      const usersWithRoles = profilesData?.map(profile => {
+        const userRole = rolesData?.find(role => role.user_id === profile.user_id);
+        return {
+          id: profile.user_id,
+          email: profile.email || '',
+          full_name: profile.full_name || '',
+          created_at: profile.created_at,
+          role: userRole?.role || 'user'
+        };
+      }) || [];
 
       setUsers(usersWithRoles);
     } catch (error) {
@@ -112,19 +121,34 @@ const Admin = () => {
 
   const fetchAnalyses = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch crop analyses
+      const { data: analysesData, error: analysesError } = await supabase
         .from('crop_analyses')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            email
-          )
-        `)
+        .select('*')
         .order('analysis_date', { ascending: false });
 
-      if (error) throw error;
-      setAnalyses((data as any) || []);
+      if (analysesError) throw analysesError;
+
+      // Fetch profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email');
+
+      if (profilesError) throw profilesError;
+
+      // Combine the data
+      const analysesWithProfiles = analysesData?.map(analysis => {
+        const profile = profilesData?.find(p => p.user_id === analysis.user_id);
+        return {
+          ...analysis,
+          profiles: profile ? {
+            full_name: profile.full_name,
+            email: profile.email
+          } : null
+        };
+      }) || [];
+
+      setAnalyses(analysesWithProfiles as any);
     } catch (error) {
       console.error('Error fetching analyses:', error);
       toast({
