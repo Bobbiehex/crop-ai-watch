@@ -19,7 +19,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const googleApiKey = Deno.env.get('GOOGLE_VISION_API_KEY');
+    const googleApiKey = 'AIzaSyAZ1MkzJlsUxq_SCwGumQMvP1OBwU5Lhwk';
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -214,26 +214,25 @@ function processVisionResults(visionResult: any, cropType: string) {
 
 function getCropSpecificDisease(cropType: string, indicator: string): string {
   const diseaseMap: Record<string, Record<string, string>> = {
+    cassava: {
+      'leaf spot': 'Cassava Bacterial Blight',
+      'mosaic': 'Cassava Mosaic Disease',
+      'yellow': 'Cassava Mosaic Disease',
+      'brown': 'Cassava Brown Streak Disease',
+      'streak': 'Cassava Brown Streak Disease'
+    },
+    sugarcane: {
+      'red': 'Red Rot',
+      'rot': 'Red Rot',
+      'smut': 'Smut Disease',
+      'rust': 'Orange Rust',
+      'yellow': 'Yellow Leaf Disease'
+    },
     tomato: {
       'leaf spot': 'Early Blight',
       'blight': 'Late Blight',
       'yellow': 'Septoria Leaf Spot',
       'brown': 'Alternaria Stem Canker'
-    },
-    corn: {
-      'leaf spot': 'Northern Corn Leaf Blight',
-      'rust': 'Common Rust',
-      'blight': 'Southern Corn Leaf Blight'
-    },
-    wheat: {
-      'rust': 'Wheat Rust',
-      'blight': 'Wheat Blight',
-      'spot': 'Wheat Leaf Spot'
-    },
-    rice: {
-      'blight': 'Bacterial Blight',
-      'spot': 'Rice Blast',
-      'brown': 'Brown Spot'
     }
   };
 
@@ -242,6 +241,74 @@ function getCropSpecificDisease(cropType: string, indicator: string): string {
 
 function generateMockAnalysis(cropType: string) {
   const diseaseDatabase: Record<string, any[]> = {
+    cassava: [
+      {
+        disease: "Cassava Mosaic Disease",
+        severity: "moderate",
+        confidence: 89,
+        treatments: [
+          "Use virus-free planting material",
+          "Control whitefly vectors",
+          "Remove infected plants",
+          "Apply neem-based pesticides"
+        ]
+      },
+      {
+        disease: "Cassava Brown Streak Disease",
+        severity: "severe", 
+        confidence: 92,
+        treatments: [
+          "Plant resistant varieties",
+          "Control whitefly vectors",
+          "Remove infected plants immediately",
+          "Maintain field hygiene"
+        ]
+      },
+      {
+        disease: "Healthy",
+        severity: "healthy",
+        confidence: 96,
+        treatments: [
+          "Continue current care routine",
+          "Monitor for pest activity",
+          "Maintain proper spacing"
+        ]
+      }
+    ],
+    sugarcane: [
+      {
+        disease: "Red Rot",
+        severity: "severe",
+        confidence: 91,
+        treatments: [
+          "Use disease-resistant varieties",
+          "Treat seeds with fungicide",
+          "Improve drainage",
+          "Remove infected plants"
+        ]
+      },
+      {
+        disease: "Smut Disease",
+        severity: "moderate",
+        confidence: 87,
+        treatments: [
+          "Hot water treatment of seeds",
+          "Use resistant varieties",
+          "Remove affected shoots",
+          "Apply appropriate fungicides"
+        ]
+      },
+      {
+        disease: "Healthy",
+        severity: "healthy",
+        confidence: 95,
+        treatments: [
+          "Maintain current practices",
+          "Monitor for diseases",
+          "Ensure proper nutrition"
+        ]
+      }
+    ],
     tomato: [
       {
         disease: "Early Blight",
@@ -273,41 +340,6 @@ function generateMockAnalysis(cropType: string) {
           "Continue current care routine",
           "Monitor for any changes",
           "Maintain proper watering schedule"
-        ]
-      }
-    ],
-    corn: [
-      {
-        disease: "Northern Corn Leaf Blight",
-        severity: "mild",
-        confidence: 85,
-        treatments: [
-          "Apply fungicide if needed",
-          "Ensure proper field drainage",
-          "Consider resistant varieties next season"
-        ]
-      },
-      {
-        disease: "Healthy",
-        severity: "healthy", 
-        confidence: 96,
-        treatments: [
-          "Maintain current farming practices",
-          "Monitor growth regularly",
-          "Ensure adequate nutrition"
-        ]
-      }
-    ],
-    wheat: [
-      {
-        disease: "Wheat Rust",
-        severity: "moderate",
-        confidence: 91,
-        treatments: [
-          "Apply fungicide treatment",
-          "Monitor weather conditions",
-          "Consider resistant varieties",
-          "Improve field sanitation"
         ]
       }
     ],

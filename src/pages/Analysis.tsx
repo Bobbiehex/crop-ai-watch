@@ -3,10 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Camera, Upload, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Analysis = () => {
+  const navigate = useNavigate();
+
   return (
-    <div className="container mx-auto px-4 py-16">
+    <Layout>
+      <div className="container mx-auto px-4 py-16">
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold mb-6">
           AI Crop <span className="bg-gradient-primary bg-clip-text text-transparent">Analysis</span>
@@ -64,12 +68,17 @@ const Analysis = () => {
         </Card>
       </div>
 
-      <div className="text-center">
-        <Button size="lg" className="bg-gradient-primary shadow-glow">
-          Start Analysis
-        </Button>
+        <div className="text-center">
+          <Button 
+            size="lg" 
+            className="bg-gradient-primary shadow-glow"
+            onClick={() => navigate('/dashboard')}
+          >
+            Start Analysis
+          </Button>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

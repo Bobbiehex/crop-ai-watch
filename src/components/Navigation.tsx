@@ -18,6 +18,7 @@ const Navigation = () => {
     { name: "Dashboard", href: "/dashboard", protected: true },
     { name: "Analysis", href: "/analysis" },
     { name: "Weather", href: "/weather" },
+    { name: "Drone", href: "/drone" },
     { name: "Resources", href: "/resources" },
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },

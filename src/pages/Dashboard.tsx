@@ -312,13 +312,9 @@ const Dashboard = () => {
                       <SelectValue placeholder="Select crop type" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="cassava">Cassava</SelectItem>
+                      <SelectItem value="sugarcane">Sugarcane</SelectItem>
                       <SelectItem value="tomato">Tomato</SelectItem>
-                      <SelectItem value="corn">Corn</SelectItem>  
-                      <SelectItem value="wheat">Wheat</SelectItem>
-                      <SelectItem value="rice">Rice</SelectItem>
-                      <SelectItem value="potato">Potato</SelectItem>
-                      <SelectItem value="bean">Bean</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

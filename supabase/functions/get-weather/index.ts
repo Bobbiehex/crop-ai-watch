@@ -18,7 +18,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const openWeatherApiKey = Deno.env.get('OPENWEATHER_API_KEY');
+    const openWeatherApiKey = '5a3b2b02fee4c89ab338a895b7ac2a16';
 
     if (!openWeatherApiKey) {
       console.error('OpenWeather API key not found');
