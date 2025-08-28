@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search } from 'lucide-react';
+import { Search, MapPin } from 'lucide-react';
 
 // Extend Window interface for Google Maps
 declare global {
@@ -116,28 +116,68 @@ const WeatherMap = ({ onLocationChange }: WeatherMapProps) => {
     }
   };
 
-  // If no Google API key, show input field
+  // Show simple location selector without Google Maps if no API key
   if (!googleApiKey) {
     return (
       <div className="bg-gradient-subtle h-96 rounded-lg flex flex-col items-center justify-center p-6">
-        <h3 className="text-lg font-semibold mb-4">Interactive Weather Map</h3>
+        <h3 className="text-lg font-semibold mb-4">Location Weather</h3>
         <p className="text-muted-foreground mb-4 text-center">
-          Enter your Google Maps API key to enable the interactive map feature
+          Click the button below to use your current location for weather data
         </p>
-        <div className="flex gap-2 w-full max-w-md">
-          <Input
-            type="password"
-            placeholder="Enter Google Maps API key"
-            value={googleApiKey}
-            onChange={(e) => setGoogleApiKey(e.target.value)}
-          />
+        <Button 
+          onClick={() => {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (position) => {
+                  const { latitude, longitude } = position.coords;
+                  onLocationChange(latitude, longitude, "Current Location");
+                },
+                (error) => {
+                  console.error('Error getting location:', error);
+                  // Default to London if location access is denied
+                  onLocationChange(51.5074, -0.1278, "London, UK");
+                }
+              );
+            } else {
+              // Default to London if geolocation not supported
+              onLocationChange(51.5074, -0.1278, "London, UK");
+            }
+          }}
+          className="mb-4"
+        >
+          <MapPin className="h-4 w-4 mr-2" />
+          Use My Location
+        </Button>
+        <div className="grid grid-cols-2 gap-2 w-full max-w-md">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onLocationChange(40.7128, -74.0060, "New York, USA")}
+          >
+            New York
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onLocationChange(51.5074, -0.1278, "London, UK")}
+          >
+            London
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onLocationChange(35.6762, 139.6503, "Tokyo, Japan")}
+          >
+            Tokyo
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onLocationChange(-33.8688, 151.2093, "Sydney, Australia")}
+          >
+            Sydney
+          </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2 text-center">
-          Get your API key at{' '}
-          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-primary">
-            Google Cloud Console
-          </a>
-        </p>
       </div>
     );
   }

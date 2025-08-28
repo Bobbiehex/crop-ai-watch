@@ -19,16 +19,38 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const googleApiKey = 'AIzaSyAZ1MkzJlsUxq_SCwGumQMvP1OBwU5Lhwk';
+    const googleApiKey = Deno.env.get('GOOGLE_VISION_API_KEY') || 'AIzaSyAZ1MkzJlsUxq_SCwGumQMvP1OBwU5Lhwk';
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     let analysis;
 
-    // Try to use Google Vision API if available, otherwise fall back to mock data
+    // Always try to use Google Vision API for real analysis
     if (googleApiKey) {
       try {
         console.log('Using Google Vision API for analysis');
+        
+        // Convert image URL to base64 if it's not already
+        let imageBase64 = '';
+        if (imageUrl.startsWith('data:image')) {
+          // Remove the data:image/jpeg;base64, prefix
+          imageBase64 = imageUrl.split(',')[1];
+        } else {
+          // If it's a URL, fetch and convert to base64
+          try {
+            const imageResponse = await fetch(imageUrl);
+            if (imageResponse.ok) {
+              const imageBuffer = await imageResponse.arrayBuffer();
+              const bytes = new Uint8Array(imageBuffer);
+              imageBase64 = btoa(String.fromCharCode(...bytes));
+            } else {
+              throw new Error('Failed to fetch image from URL');
+            }
+          } catch (fetchError) {
+            console.error('Error fetching image:', fetchError);
+            throw new Error('Could not process image URL');
+          }
+        }
         
         // Call Google Vision API for label detection
         const visionResponse = await fetch(
@@ -41,12 +63,10 @@ serve(async (req) => {
             body: JSON.stringify({
               requests: [{
                 image: {
-                  source: {
-                    imageUri: imageUrl
-                  }
+                  content: imageBase64
                 },
                 features: [
-                  { type: 'LABEL_DETECTION', maxResults: 10 },
+                  { type: 'LABEL_DETECTION', maxResults: 15 },
                   { type: 'TEXT_DETECTION', maxResults: 5 }
                 ]
               }]
@@ -55,18 +75,25 @@ serve(async (req) => {
         );
 
         if (!visionResponse.ok) {
-          throw new Error(`Vision API error: ${visionResponse.statusText}`);
+          const errorText = await visionResponse.text();
+          console.error('Vision API error response:', errorText);
+          throw new Error(`Vision API error: ${visionResponse.statusText} - ${errorText}`);
         }
 
         const visionData = await visionResponse.json();
         console.log('Google Vision API response:', JSON.stringify(visionData, null, 2));
+        
+        if (visionData.responses && visionData.responses[0] && visionData.responses[0].error) {
+          console.error('Vision API returned error:', visionData.responses[0].error);
+          throw new Error(`Vision API error: ${visionData.responses[0].error.message}`);
+        }
         
         // Process Vision API results to determine crop health
         analysis = processVisionResults(visionData.responses[0], cropType);
         
       } catch (visionError) {
         console.error('Google Vision API error:', visionError);
-        console.log('Falling back to mock analysis');
+        console.log('Falling back to mock analysis due to Vision API error');
         analysis = generateMockAnalysis(cropType);
       }
     } else {

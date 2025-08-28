@@ -16,6 +16,24 @@ serve(async (req) => {
     const { lat, lon, location } = await req.json();
     console.log('Weather request for:', { lat, lon, location });
 
+    // Validate coordinates
+    if (lat === null || lon === null || typeof lat !== 'number' || typeof lon !== 'number') {
+      console.error('Invalid coordinates received:', { lat, lon });
+      return new Response(
+        JSON.stringify({ error: 'Invalid coordinates provided. Latitude and longitude must be valid numbers.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate coordinate ranges
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      console.error('Coordinates out of range:', { lat, lon });
+      return new Response(
+        JSON.stringify({ error: 'Coordinates out of valid range. Latitude: -90 to 90, Longitude: -180 to 180.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const openWeatherApiKey = '5a3b2b02fee4c89ab338a895b7ac2a16';
