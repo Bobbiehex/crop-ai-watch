@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Menu, Leaf, User, LogIn, LogOut } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -81,6 +82,7 @@ const Navigation = () => {
         </div>
 
         <div className="hidden md:flex items-center space-x-4">
+          <ThemeToggle />
           {user ? (
             <>
               <Link to="/admin" className="text-sm text-muted-foreground hover:text-primary">
@@ -127,6 +129,7 @@ const Navigation = () => {
                 </Link>
               ))}
               <div className="flex flex-col space-y-2 pt-4">
+                <ThemeToggle />
                 {user ? (
                   <Button variant="outline" size="sm" onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />

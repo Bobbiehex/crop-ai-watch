@@ -1,8 +1,21 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Scan, Plane, BarChart3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import heroImage from "@/assets/hero-agriculture.jpg";
 
 const Hero = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleGetStarted = () => {
+    if (user) {
+      navigate("/dashboard");
+    } else {
+      navigate("/auth");
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -33,7 +46,7 @@ const Hero = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="bg-gradient-primary shadow-glow">
+            <Button size="lg" className="bg-gradient-primary shadow-glow" onClick={handleGetStarted}>
               Get Started
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
